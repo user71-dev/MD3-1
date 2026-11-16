@@ -1,0 +1,2 @@
+#define PAYLOAD_API __declspec(dllexport)
+#define PAYLOAD_API __declspec(dllimport)
