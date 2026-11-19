@@ -18,18 +18,18 @@
     <ClCompile Include="Module_3_1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DllInjection.cpp">
+    <ClCompile Include="Util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SetWindowsHookEx.cpp">
+    <ClCompile Include="Technique.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DllInjection.h">
+    <ClInclude Include="Util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SetWindowsHookEx.h">
+    <ClInclude Include="Technique.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
