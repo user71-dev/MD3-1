@@ -11,7 +11,7 @@
 typedef struct _LSA_UNICODE_STRING {
     USHORT Length;
     USHORT MaximumLength;
-    PWSTR  Buffer;
+    PWSTR Buffer;
 } UNICODE_STRING, * PUNICODE_STRING;
 
 typedef struct _OBJECT_ATTRIBUTES {
@@ -64,12 +64,142 @@ using myRtlCreateUserThread = NTSTATUS(NTAPI*)(
     OUT PCLIENT_ID ClientID
     );
 
-struct ThreadpoolParams
-{
-    LPVOID shellcodeAddr;
-    LPVOID pCreateThreadpoolWork;  
-    LPVOID pSubmitThreadpoolWork;
-};
+using myNtQueryInformationWorkerFactory = NTSTATUS(NTAPI*)(
+    HANDLE WorkerFactoryHandle,
+    ULONG WorkerFactoryInformationClass,
+    PVOID WorkerFactoryInformation,
+    ULONG WorkerFactoryInformationLength,
+    PULONG ReturnLength
+    );
 
-BOOL InjectThreadpoolWait(const std::vector<unsigned char>& shellcode, DWORD targetPid);
+using myNtSetInformationWorkerFactory = NTSTATUS(NTAPI*)(
+    HANDLE WorkerFactoryHandle,
+    ULONG WorkerFactoryInformationClass,
+    PVOID WorkerFactoryInformation,
+    ULONG WorkerFactoryInformationLength
+    );
+
+using myNtQuerySystemInformation = NTSTATUS(NTAPI*)(
+    IN ULONG SystemInformationClass,
+    OUT PVOID SystemInformation,
+    IN ULONG SystemInformationLength,
+    OUT PULONG ReturnLength OPTIONAL
+    );
+
+typedef enum _OBJECT_INFORMATION_CLASS {
+    ObjectBasicInformation,
+    ObjectNameInformation,
+    ObjectTypeInformation,
+    ObjectAllInformation,
+    ObjectDataInformation
+} OBJECT_INFORMATION_CLASS, * POBJECT_INFORMATION_CLASS;
+
+using myNtQueryObject = NTSTATUS(NTAPI*)(
+    IN HANDLE ObjectHandle,
+    IN ULONG ObjectInformationClass,
+    OUT PVOID ObjectInformation,
+    IN ULONG Length,
+    OUT PULONG ReturnLength
+    );
+
+typedef struct _SYSTEM_HANDLE_TABLE_ENTRY_INFO {
+    USHORT UniqueProcessId;
+    USHORT CreatorBackTraceIndex;
+    UCHAR ObjectTypeIndex;
+    UCHAR HandleAttributes;
+    USHORT HandleValue;
+    PVOID Object;
+    ULONG GrantedAccess;
+} SYSTEM_HANDLE_TABLE_ENTRY_INFO, * PSYSTEM_HANDLE_TABLE_ENTRY_INFO;
+
+typedef struct _SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX {
+    PVOID Object;
+    ULONG_PTR UniqueProcessId;
+    ULONG_PTR HandleValue;
+    ULONG GrantedAccess;
+    USHORT CreatorBackTraceIndex;
+    USHORT ObjectTypeIndex;
+    ULONG HandleAttributes;
+    ULONG Reserved;
+} SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX, * PSYSTEM_HANDLE_TABLE_ENTRY_INFO_EX;
+
+typedef struct _SYSTEM_HANDLE_INFORMATION {
+    ULONG NumberOfHandles;
+    SYSTEM_HANDLE_TABLE_ENTRY_INFO Handles[1];
+} SYSTEM_HANDLE_INFORMATION, * PSYSTEM_HANDLE_INFORMATION;
+
+typedef struct _SYSTEM_HANDLE_INFORMATION_EX {
+    ULONG_PTR NumberOfHandles;
+    ULONG_PTR Reserved;
+    SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX Handles[1];
+} SYSTEM_HANDLE_INFORMATION_EX, * PSYSTEM_HANDLE_INFORMATION_EX;
+
+#define WORKER_FACTORY_BASIC_INFORMATION_CLASS 7
+#define WORKER_FACTORY_THREAD_MINIMUM_CLASS 4
+
+#ifndef STATUS_SUCCESS
+#define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
+#endif
+
+#ifndef NT_SUCCESS
+#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+#endif
+
+typedef struct _OBJECT_TYPE_INFORMATION {
+    UNICODE_STRING TypeName;
+    ULONG TotalNumberOfObjects;
+    ULONG TotalNumberOfHandles;
+    ULONG TotalNonPagedPoolUsage;
+    ULONG TotalNamePoolUsage;
+    ULONG TotalHandleTableUsage;
+    ULONG HighWaterNumberOfObjects;
+    ULONG HighWaterNumberOfHandles;
+    ULONG HighWaterPagedPoolUsage;
+    ULONG HighWaterNonPagedPoolUsage;
+    ULONG HighWaterNamePoolUsage;
+    ULONG HighWaterHandleTableUsage;
+    ULONG InvalidAttributes;
+    GENERIC_MAPPING GenericMapping;
+    ULONG ValidAccessMask;
+    BOOLEAN SecurityRequired;
+    BOOLEAN MaintainHandleCount;
+    UCHAR TypeIndex;
+    CHAR ReservedByte;
+    ULONG PoolType;
+    ULONG DefaultPagedPoolCharge;
+    ULONG DefaultNonPagedPoolCharge;
+} OBJECT_TYPE_INFORMATION, * POBJECT_TYPE_INFORMATION;
+
+typedef struct _WORKER_FACTORY_BASIC_INFORMATION {
+    LARGE_INTEGER Timeout;
+    LARGE_INTEGER RetryTimeout;
+    LARGE_INTEGER IdleTimeout;
+    BOOLEAN       Paused;
+    BOOLEAN       TimerSet;
+    BOOLEAN       QueuedToExWorker;
+    BOOLEAN       MayCreate;
+    BOOLEAN       CreateInProgress;
+    BOOLEAN       InsertedIntoQueue;
+    BOOLEAN       Shutdown;
+    ULONG         BindingCount;
+    ULONG         ThreadMinimum;
+    ULONG         ThreadMaximum;
+    ULONG         PendingWorkerCount;
+    ULONG         WaitingWorkerCount;
+    ULONG         TotalWorkerCount;
+    ULONG         ReleaseCount;
+    LONGLONG      InfiniteWaitGoal;
+    PVOID         StartRoutine;          // offset 0x48 trên x64
+    PVOID         StartParameter;
+    HANDLE        ProcessId;
+    SIZE_T        StackReserve;
+    SIZE_T        StackCommit;
+    NTSTATUS      LastThreadCreationStatus;
+} WORKER_FACTORY_BASIC_INFORMATION, * PWORKER_FACTORY_BASIC_INFORMATION;
+
+static_assert(sizeof(WORKER_FACTORY_BASIC_INFORMATION) == 120,
+    "WORKER_FACTORY_BASIC_INFORMATION must be exactly 120 bytes on x64");
+
+BOOL InjectThreadpool(const std::vector<unsigned char>& shellcode, DWORD targetPid);
+
 BOOL InjectSectionMapping(const std::vector<unsigned char>& shellcode, DWORD targetPid);

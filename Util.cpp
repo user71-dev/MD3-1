@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <cctype>
 
+#pragma comment(lib, "psapi.lib")   // FIX: cần thiết trên nhiều SDK
+
 LPVOID GetRemoteModuleBase(HANDLE hProcess, const char* moduleName)
 {
     HMODULE hMods[1024];
     DWORD cbNeeded;
 
-    // Dùng Ex + LIST_MODULES_ALL để chắc chắn liệt kê đủ mọi module
     if (!EnumProcessModulesEx(hProcess, hMods, sizeof(hMods),
         &cbNeeded, LIST_MODULES_ALL))
     {
@@ -16,7 +17,6 @@ LPVOID GetRemoteModuleBase(HANDLE hProcess, const char* moduleName)
         return NULL;
     }
 
-    // Chuẩn hoá tên cần tìm về lowercase
     std::string targetLower = moduleName;
     std::transform(targetLower.begin(), targetLower.end(), targetLower.begin(),
         [](unsigned char c) { return (char)::tolower(c); });
@@ -42,7 +42,7 @@ std::vector<unsigned char> ReadShellcodeFromFile(const std::string& filename)
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file)
     {
-        std::cerr << "Can not open file" << filename << std::endl;
+        std::cerr << "Cannot open file: " << filename << std::endl;  // FIX: dấu cách
         return {};
     }
 
@@ -51,9 +51,8 @@ std::vector<unsigned char> ReadShellcodeFromFile(const std::string& filename)
 
     std::vector<unsigned char> buffer(size);
     if (file.read(reinterpret_cast<char*>(buffer.data()), size))
-    {
         return buffer;
-    }
+
     std::cerr << "Error read file" << std::endl;
     return {};
 }
